@@ -10,6 +10,8 @@ from app.db.base import Base
 
 
 class NutritionAnalysis(Base):
+    """Persist a single AI-generated nutrition estimate and its upload metadata."""
+
     __tablename__ = "nutrition_analyses"
 
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
@@ -31,4 +33,3 @@ class NutritionAnalysis(Base):
     created_at: Mapped[datetime] = mapped_column(
         DateTime(timezone=True), server_default=func.now(), nullable=False
     )
-

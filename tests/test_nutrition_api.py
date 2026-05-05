@@ -1,4 +1,6 @@
 async def test_analyze_nutrition_accepts_image_and_persists_result(client):
+    """Verify that image uploads produce a persisted nutrition analysis response."""
+
     response = await client.post(
         "/api/v1/nutrition/analyze",
         files={"image": ("meal.jpg", b"fake-image-bytes", "image/jpeg")},
@@ -18,6 +20,8 @@ async def test_analyze_nutrition_accepts_image_and_persists_result(client):
 
 
 async def test_analyze_nutrition_rejects_non_image_upload(client):
+    """Verify that unsupported upload content types are rejected before AI analysis."""
+
     response = await client.post(
         "/api/v1/nutrition/analyze",
         files={"image": ("meal.txt", b"not-an-image", "text/plain")},

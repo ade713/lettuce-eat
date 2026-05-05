@@ -16,6 +16,8 @@ SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 
 
 def get_nutrition_ai_service(settings: Settings = Depends(get_settings)) -> NutritionAIService:
+    """Build the nutrition AI service after confirming OpenAI credentials are configured."""
+
     if not settings.openai_api_key:
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR,
@@ -32,6 +34,8 @@ async def analyze_nutrition(
     settings: Settings = Depends(get_settings),
     nutrition_ai: NutritionAIService = Depends(get_nutrition_ai_service),
 ) -> NutritionAnalysisResponse:
+    """Validate an uploaded meal image, estimate nutrition, persist it, and return the result."""
+
     if image.content_type not in SUPPORTED_IMAGE_TYPES:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
@@ -64,6 +68,8 @@ async def analyze_nutrition(
 async def get_analysis(
     analysis_id: UUID, session: AsyncSession = Depends(get_db_session)
 ) -> NutritionAnalysisResponse:
+    """Fetch a previously saved nutrition analysis by its unique identifier."""
+
     record = await session.scalar(
         select(NutritionAnalysis).where(NutritionAnalysis.id == analysis_id)
     )
@@ -76,6 +82,8 @@ async def get_analysis(
 def _record_from_estimate(
     estimate: NutritionEstimate, content_type: str, image_size_bytes: int, notes: str | None
 ) -> NutritionAnalysis:
+    """Convert a validated nutrition estimate into the database record shape."""
+
     return NutritionAnalysis(
         image_content_type=content_type,
         image_size_bytes=image_size_bytes,
@@ -94,8 +102,9 @@ def _record_from_estimate(
 
 
 def _response_from_record(record: NutritionAnalysis) -> NutritionAnalysisResponse:
+    """Convert a persisted nutrition analysis record into the public API response schema."""
+
     payload = dict(record.raw_result)
     payload["id"] = record.id
     payload["created_at"] = record.created_at
     return NutritionAnalysisResponse.model_validate(payload)
-

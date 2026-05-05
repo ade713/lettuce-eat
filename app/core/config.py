@@ -5,6 +5,8 @@ from pydantic_settings import BaseSettings, SettingsConfigDict
 
 
 class Settings(BaseSettings):
+    """Load and validate runtime configuration for the API process."""
+
     app_name: str = "Lettuce Eat"
     environment: str = "local"
     database_url: str = Field(
@@ -20,4 +22,6 @@ class Settings(BaseSettings):
 
 @lru_cache
 def get_settings() -> Settings:
+    """Return cached application settings loaded from environment variables and .env."""
+
     return Settings()

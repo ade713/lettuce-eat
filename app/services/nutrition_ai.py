@@ -51,13 +51,19 @@ NUTRITION_JSON_SCHEMA = {
 
 
 class NutritionAIService:
+    """Analyze uploaded meal images with the configured OpenAI vision model."""
+
     def __init__(self, settings: Settings):
+        """Create an OpenAI client using the configured API key and model settings."""
+
         self._settings = settings
         self._client = AsyncOpenAI(api_key=settings.openai_api_key)
 
     async def analyze_image(
         self, *, image_bytes: bytes, content_type: str, notes: str | None
     ) -> NutritionEstimate:
+        """Send an uploaded food image to the AI model and validate the nutrition estimate."""
+
         encoded_image = base64.b64encode(image_bytes).decode("ascii")
         data_url = f"data:{content_type};base64,{encoded_image}"
         notes_text = f"\nAdditional client notes: {notes}" if notes else ""
@@ -104,4 +110,3 @@ class NutritionAIService:
         )
 
         return NutritionEstimate.model_validate(json.loads(response.output_text))
-
