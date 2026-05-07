@@ -4,6 +4,16 @@ FastAPI backend for uploading a meal or food photo, sending it to an AI vision m
 
 Nutrition from a photo is an estimate. The API returns confidence and assumptions so clients can show the result honestly.
 
+## Implementation plan
+
+The staged MVP implementation plan lives in:
+
+- `docs/plans.md`
+- `docs/meal-flow-api.md`
+- `AGENTS.md`
+
+The PDF in `docs/` is a shareable snapshot, while the Markdown files are the source of truth for implementation.
+
 ## Stack
 
 - FastAPI
