@@ -1,0 +1,612 @@
+%PDF-1.4
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [4 0 R 6 0 R 8 0 R 10 0 R 12 0 R] /Count 5 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 5 0 R >>
+endobj
+5 0 obj
+<< /Length 4183 >>
+stream
+BT
+/F1 20 Tf
+1 0 0 1 54 744 Tm
+(Lettuce Eat) Tj
+/F1 10 Tf
+1 0 0 1 54 720 Tm
+(Incremental Backend Implementation Plan) Tj
+/F1 10 Tf
+1 0 0 1 54 706 Tm
+(Plan 1: Server-Owned Correction Loop) Tj
+/F1 10 Tf
+1 0 0 1 54 692 Tm
+(Objective: fastest path from photo to corrected macros to logged meal in under 10 seconds.) Tj
+/F1 10 Tf
+1 0 0 1 54 678 Tm
+(Product principle: Fast estimate -> Fast correction -> Logged meal.) Tj
+/F1 14 Tf
+1 0 0 1 54 650 Tm
+(MVP Scope) Tj
+/F1 10 Tf
+1 0 0 1 54 630 Tm
+(- Included: photo meal capture, AI food detection, AI macro estimation, quick correction) Tj
+/F1 10 Tf
+1 0 0 1 54 616 Tm
+(  support, and logged meal storage.) Tj
+/F1 10 Tf
+1 0 0 1 54 602 Tm
+(- Not included for MVP: barcode scanning, nutrition database integration, restaurant) Tj
+/F1 10 Tf
+1 0 0 1 54 588 Tm
+(  database, Apple Health, social features, and coaching.) Tj
+/F1 10 Tf
+1 0 0 1 54 574 Tm
+(- Success metric: Photo -> corrected macros -> logged meal in under 10 seconds.) Tj
+/F1 10 Tf
+1 0 0 1 54 560 Tm
+(- Primary goal: validate the interaction loop, not perfect nutrition accuracy.) Tj
+/F1 14 Tf
+1 0 0 1 54 532 Tm
+(Client Response Schema Requirement) Tj
+/F1 10 Tf
+1 0 0 1 54 512 Tm
+(- Canonical v1 analysis response sent to the client:) Tj
+/F1 10 Tf
+1 0 0 1 54 498 Tm
+(- analysis_id: string, for example analysis_123) Tj
+/F1 10 Tf
+1 0 0 1 54 484 Tm
+(- version: v1) Tj
+/F1 10 Tf
+1 0 0 1 54 470 Tm
+(- items[]: detected meal items with id, label, category, estimated_grams, confidence,) Tj
+/F1 10 Tf
+1 0 0 1 54 456 Tm
+(  macro_estimate, uncertainty, and assumptions.) Tj
+/F1 10 Tf
+1 0 0 1 54 442 Tm
+(- macro_estimate: calories, protein_g, carbs_g, fat_g.) Tj
+/F1 10 Tf
+1 0 0 1 54 428 Tm
+(- uncertainty: portion_size, ingredient_composition, cooking_fat.) Tj
+/F1 10 Tf
+1 0 0 1 54 414 Tm
+(- assumptions[]: key, label, value records used by the correction UI.) Tj
+/F1 10 Tf
+1 0 0 1 54 400 Tm
+(- meal_totals: calories, protein_g, carbs_g, fat_g aggregated across all items.) Tj
+/F1 10 Tf
+1 0 0 1 54 386 Tm
+(- overall_confidence: meal-level confidence score.) Tj
+/F1 10 Tf
+1 0 0 1 54 372 Tm
+(- suggestions[]: UI correction nudges with id, target_type, target_id, kind, direction,) Tj
+/F1 10 Tf
+1 0 0 1 54 358 Tm
+(  title, subtitle, and preview_delta.) Tj
+/F1 10 Tf
+1 0 0 1 54 344 Tm
+(- preview_delta: macro change preview for calories, protein_g, carbs_g, fat_g.) Tj
+/F1 10 Tf
+1 0 0 1 54 330 Tm
+(- This schema is the public API contract for the initial photo analysis response.) Tj
+/F1 10 Tf
+1 0 0 1 54 316 Tm
+(- Correction and log endpoints should return the same macro field names and item IDs so the) Tj
+/F1 10 Tf
+1 0 0 1 54 302 Tm
+(  client can update UI state without remapping.) Tj
+/F1 10 Tf
+1 0 0 1 54 288 Tm
+(- The validated JSON stored for the future dataset should preserve this client-facing schema) Tj
+/F1 10 Tf
+1 0 0 1 54 274 Tm
+(  plus internal metadata needed for audit/debugging.) Tj
+/F1 14 Tf
+1 0 0 1 54 246 Tm
+(Dataset And Storage Requirement) Tj
+/F1 10 Tf
+1 0 0 1 54 226 Tm
+(- The backend must preserve the full meal logging trail so it can become a training and) Tj
+/F1 10 Tf
+1 0 0 1 54 212 Tm
+(  evaluation dataset later.) Tj
+/F1 10 Tf
+1 0 0 1 54 198 Tm
+(- Store the original image or a durable object-storage key for the original image.) Tj
+/F1 10 Tf
+1 0 0 1 54 184 Tm
+(- Store the AI raw response exactly as returned by the provider for debugging, prompt) Tj
+/F1 10 Tf
+1 0 0 1 54 170 Tm
+(  iteration, and offline review.) Tj
+/F1 10 Tf
+1 0 0 1 54 156 Tm
+(- Store the validated JSON produced from the AI response after schema validation, using the) Tj
+/F1 10 Tf
+1 0 0 1 54 142 Tm
+(  v1 client response schema as the canonical app-level shape.) Tj
+/F1 10 Tf
+1 0 0 1 54 128 Tm
+(- Store every user correction applied during the correction loop, including values and) Tj
+/F1 10 Tf
+1 0 0 1 54 114 Tm
+(  timestamps.) Tj
+/F1 10 Tf
+1 0 0 1 54 100 Tm
+(- Store the final saved meal with final corrected macros, detected foods, suggestions) Tj
+/F1 10 Tf
+1 0 0 1 54 86 Tm
+(  accepted/ignored when available, and a link back to the original draft analysis.) Tj
+/F1 10 Tf
+1 0 0 1 54 72 Tm
+(- Do not use this data for training/evaluation without future privacy, consent, retention,) Tj
+ET
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 7 0 R >>
+endobj
+7 0 obj
+<< /Length 4098 >>
+stream
+BT
+/F1 10 Tf
+1 0 0 1 54 744 Tm
+(  and deletion rules. MVP should preserve the data shape while keeping policy decisions) Tj
+/F1 10 Tf
+1 0 0 1 54 730 Tm
+(  explicit.) Tj
+/F1 14 Tf
+1 0 0 1 54 702 Tm
+(Real Image Testing Approach) Tj
+/F1 10 Tf
+1 0 0 1 54 682 Tm
+(- Add a small manual/integration test path that uses a real meal photo to validate the end-) Tj
+/F1 10 Tf
+1 0 0 1 54 668 Tm
+(  to-end backend loop.) Tj
+/F1 10 Tf
+1 0 0 1 54 654 Tm
+(- Keep normal automated tests mocked and deterministic so CI does not require OpenAI) Tj
+/F1 10 Tf
+1 0 0 1 54 640 Tm
+(  credentials or a checked-in private image.) Tj
+/F1 10 Tf
+1 0 0 1 54 626 Tm
+(- Use a local ignored folder such as test-assets/manual/ for real meal photos, or document a) Tj
+/F1 10 Tf
+1 0 0 1 54 612 Tm
+(  curl command that points to a user-provided image path.) Tj
+/F1 10 Tf
+1 0 0 1 54 598 Tm
+(- Real-image acceptance check: upload photo, receive a v1 response with items, meal_totals,) Tj
+/F1 10 Tf
+1 0 0 1 54 584 Tm
+(  overall_confidence, and suggestions; apply at least one correction; log the meal; confirm) Tj
+/F1 10 Tf
+1 0 0 1 54 570 Tm
+(  the whole flow can complete in under 10 seconds.) Tj
+/F1 10 Tf
+1 0 0 1 54 556 Tm
+(- Do not treat the real-image output as a golden nutrition truth; validate response shape,) Tj
+/F1 10 Tf
+1 0 0 1 54 542 Tm
+(  latency, correction behavior, successful logging, and dataset persistence fields.) Tj
+/F1 14 Tf
+1 0 0 1 54 514 Tm
+(Stage 0: Document The Target API Contract) Tj
+/F1 10 Tf
+1 0 0 1 54 494 Tm
+(- Purpose: lock the backend shape before changing code.) Tj
+/F1 10 Tf
+1 0 0 1 54 480 Tm
+(- Add docs/meal-flow-api.md describing analyze photo, apply corrections, and log meal.) Tj
+/F1 10 Tf
+1 0 0 1 54 466 Tm
+(- Define draft vs logged meal states.) Tj
+/F1 10 Tf
+1 0 0 1 54 452 Tm
+(- Document the v1 client response schema exactly: analysis_id, version, items, meal_totals,) Tj
+/F1 10 Tf
+1 0 0 1 54 438 Tm
+(  overall_confidence, and suggestions.) Tj
+/F1 10 Tf
+1 0 0 1 54 424 Tm
+(- Document allowed item category, uncertainty, suggestion kind, and direction values used by) Tj
+/F1 10 Tf
+1 0 0 1 54 410 Tm
+(  the correction UI.) Tj
+/F1 10 Tf
+1 0 0 1 54 396 Tm
+(- Define example JSON responses for photo analysis, corrected macros, and logged meals using) Tj
+/F1 10 Tf
+1 0 0 1 54 382 Tm
+(  the v1 schema field names.) Tj
+/F1 10 Tf
+1 0 0 1 54 368 Tm
+(- Document the dataset record created by each flow: original image, AI raw response,) Tj
+/F1 10 Tf
+1 0 0 1 54 354 Tm
+(  validated JSON, user corrections, and final saved meal.) Tj
+/F1 10 Tf
+1 0 0 1 54 340 Tm
+(- Document how to run a manual real-image test with a local meal photo and OpenAI API key.) Tj
+/F1 10 Tf
+1 0 0 1 54 326 Tm
+(- Deliverable: documentation only; no production code changes.) Tj
+/F1 14 Tf
+1 0 0 1 54 298 Tm
+(Stage 1: Add New Schemas Without New Behavior) Tj
+/F1 10 Tf
+1 0 0 1 54 278 Tm
+(- Purpose: introduce the data model safely before wiring endpoints.) Tj
+/F1 10 Tf
+1 0 0 1 54 264 Tm
+(- Add Pydantic schemas matching the v1 response: MealAnalysisResponse, MealItem,) Tj
+/F1 10 Tf
+1 0 0 1 54 250 Tm
+(  MacroEstimate, Uncertainty, Assumption, MealTotals, Suggestion, and PreviewDelta.) Tj
+/F1 10 Tf
+1 0 0 1 54 236 Tm
+(- Use analysis_id, version, items, meal_totals, overall_confidence, and suggestions as the) Tj
+/F1 10 Tf
+1 0 0 1 54 222 Tm
+(  exact top-level response fields.) Tj
+/F1 10 Tf
+1 0 0 1 54 208 Tm
+(- Add request/response schemas for corrections and logged meals that keep item IDs stable) Tj
+/F1 10 Tf
+1 0 0 1 54 194 Tm
+(  across analyze, correction, and log steps.) Tj
+/F1 10 Tf
+1 0 0 1 54 180 Tm
+(- Validated JSON schemas should represent the canonical app-level interpretation of the AI) Tj
+/F1 10 Tf
+1 0 0 1 54 166 Tm
+(  response.) Tj
+/F1 10 Tf
+1 0 0 1 54 152 Tm
+(- Keep existing /nutrition/analyze behavior unchanged.) Tj
+/F1 10 Tf
+1 0 0 1 54 138 Tm
+(- Tests: schema validation for required top-level fields, item IDs, grams, macros,) Tj
+/F1 10 Tf
+1 0 0 1 54 124 Tm
+(  confidence ranges, suggestions, preview deltas, correction payloads, and persisted dataset) Tj
+/F1 10 Tf
+1 0 0 1 54 110 Tm
+(  metadata.) Tj
+ET
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 9 0 R >>
+endobj
+9 0 obj
+<< /Length 4285 >>
+stream
+BT
+/F1 14 Tf
+1 0 0 1 54 744 Tm
+(Stage 2: Extend AI Output Shape) Tj
+/F1 10 Tf
+1 0 0 1 54 724 Tm
+(- Purpose: make AI analysis return the v1 food-level structured response.) Tj
+/F1 10 Tf
+1 0 0 1 54 710 Tm
+(- Update the AI JSON schema and prompt to return detected items, estimated grams, item) Tj
+/F1 10 Tf
+1 0 0 1 54 696 Tm
+(  macro_estimate, uncertainty, assumptions, meal_totals, overall_confidence, and) Tj
+/F1 10 Tf
+1 0 0 1 54 682 Tm
+(  suggestions.) Tj
+/F1 10 Tf
+1 0 0 1 54 668 Tm
+(- Ensure suggestions are correction-ready nudges with target_type, target_id, kind,) Tj
+/F1 10 Tf
+1 0 0 1 54 654 Tm
+(  direction, title, subtitle, and preview_delta.) Tj
+/F1 10 Tf
+1 0 0 1 54 640 Tm
+(- Capture both the provider raw response and the validated JSON derived from it.) Tj
+/F1 10 Tf
+1 0 0 1 54 626 Tm
+(- Keep the current endpoint stable while the richer service method is introduced behind) Tj
+/F1 10 Tf
+1 0 0 1 54 612 Tm
+(  tests.) Tj
+/F1 10 Tf
+1 0 0 1 54 598 Tm
+(- Update fake AI service with deterministic food-level v1 test data.) Tj
+/F1 10 Tf
+1 0 0 1 54 584 Tm
+(- Add an optional manual real-image smoke test command that exercises the real OpenAI call) Tj
+/F1 10 Tf
+1 0 0 1 54 570 Tm
+(  outside CI.) Tj
+/F1 10 Tf
+1 0 0 1 54 556 Tm
+(- Tests: mocked AI response validates into new schemas; bad or missing AI fields fail) Tj
+/F1 10 Tf
+1 0 0 1 54 542 Tm
+(  validation; manual real-image run validates shape, latency, and raw/validated response) Tj
+/F1 10 Tf
+1 0 0 1 54 528 Tm
+(  capture.) Tj
+/F1 14 Tf
+1 0 0 1 54 500 Tm
+(Stage 3: Add Draft Meal Storage) Tj
+/F1 10 Tf
+1 0 0 1 54 480 Tm
+(- Purpose: persist analysis drafts separately from final logged meals and preserve dataset) Tj
+/F1 10 Tf
+1 0 0 1 54 466 Tm
+(  inputs.) Tj
+/F1 10 Tf
+1 0 0 1 54 452 Tm
+(- Add a draft meal model/table with status, image storage key or image bytes reference,) Tj
+/F1 10 Tf
+1 0 0 1 54 438 Tm
+(  validated v1 response JSON, detected items JSON, original meal_totals, current corrected) Tj
+/F1 10 Tf
+1 0 0 1 54 424 Tm
+(  totals, suggestion/correction history, and AI raw response.) Tj
+/F1 10 Tf
+1 0 0 1 54 410 Tm
+(- Prefer a new model/table over stretching the existing NutritionAnalysis model too far.) Tj
+/F1 10 Tf
+1 0 0 1 54 396 Tm
+(- Keep existing endpoint working until the new meal endpoint is ready.) Tj
+/F1 10 Tf
+1 0 0 1 54 382 Tm
+(- Tests: create and retrieve draft records; verify original image reference, raw AI) Tj
+/F1 10 Tf
+1 0 0 1 54 368 Tm
+(  response, validated v1 JSON, and corrected totals are persisted.) Tj
+/F1 14 Tf
+1 0 0 1 54 340 Tm
+(Stage 4: Add POST /api/v1/meals/analyze-photo) Tj
+/F1 10 Tf
+1 0 0 1 54 320 Tm
+(- Purpose: introduce the new MVP entrypoint.) Tj
+/F1 10 Tf
+1 0 0 1 54 306 Tm
+(- Endpoint accepts image upload plus optional notes.) Tj
+/F1 10 Tf
+1 0 0 1 54 292 Tm
+(- Runs AI once, stores the original image or image reference, raw AI response, validated v1) Tj
+/F1 10 Tf
+1 0 0 1 54 278 Tm
+(  JSON, and a draft meal analysis.) Tj
+/F1 10 Tf
+1 0 0 1 54 264 Tm
+(- Returns the v1 client response schema: analysis_id, version, items, meal_totals,) Tj
+/F1 10 Tf
+1 0 0 1 54 250 Tm
+(  overall_confidence, and suggestions.) Tj
+/F1 10 Tf
+1 0 0 1 54 236 Tm
+(- Existing /nutrition/analyze can remain for backward compatibility during transition.) Tj
+/F1 10 Tf
+1 0 0 1 54 222 Tm
+(- Tests: valid mocked image returns v1 draft analysis; unsupported upload returns 415; empty) Tj
+/F1 10 Tf
+1 0 0 1 54 208 Tm
+(  image returns 400; oversized image returns 413; draft and dataset fields are persisted;) Tj
+/F1 10 Tf
+1 0 0 1 54 194 Tm
+(  manual real-image curl returns the same response shape.) Tj
+/F1 14 Tf
+1 0 0 1 54 166 Tm
+(Stage 5: Add Deterministic Correction Engine) Tj
+/F1 10 Tf
+1 0 0 1 54 146 Tm
+(- Purpose: make corrections instant and server-owned without another AI call.) Tj
+/F1 10 Tf
+1 0 0 1 54 132 Tm
+(- Add a correction service that recalculates macros from draft data using item IDs and) Tj
+/F1 10 Tf
+1 0 0 1 54 118 Tm
+(  suggestion preview deltas where applicable.) Tj
+/F1 10 Tf
+1 0 0 1 54 104 Tm
+(- Support initial MVP correction controls: portion scale, composition ratio such as rice vs) Tj
+/F1 10 Tf
+1 0 0 1 54 90 Tm
+(  meat, and oil level.) Tj
+/F1 10 Tf
+1 0 0 1 54 76 Tm
+(- Append every correction request and resulting macro total to correction history for future) Tj
+ET
+endstream
+endobj
+10 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 11 0 R >>
+endobj
+11 0 obj
+<< /Length 4093 >>
+stream
+BT
+/F1 10 Tf
+1 0 0 1 54 744 Tm
+(  evaluation.) Tj
+/F1 10 Tf
+1 0 0 1 54 730 Tm
+(- Tests: correction math unit tests; verify corrections do not call AI; verify corrected) Tj
+/F1 10 Tf
+1 0 0 1 54 716 Tm
+(  totals and correction history are persisted; manual real-image run confirms corrections) Tj
+/F1 10 Tf
+1 0 0 1 54 702 Tm
+(  update the AI-derived draft instantly.) Tj
+/F1 14 Tf
+1 0 0 1 54 674 Tm
+(Stage 6: Add PATCH /api/v1/meals/{analysis_id}/corrections) Tj
+/F1 10 Tf
+1 0 0 1 54 654 Tm
+(- Purpose: expose the correction loop to the UI.) Tj
+/F1 10 Tf
+1 0 0 1 54 640 Tm
+(- Endpoint accepts correction payload targeting analysis_id and item IDs from the v1) Tj
+/F1 10 Tf
+1 0 0 1 54 626 Tm
+(  response.) Tj
+/F1 10 Tf
+1 0 0 1 54 612 Tm
+(- Loads the draft analysis, applies the deterministic correction engine, persists updated) Tj
+/F1 10 Tf
+1 0 0 1 54 598 Tm
+(  draft values, and returns updated items, meal_totals, overall_confidence, and suggestions) Tj
+/F1 10 Tf
+1 0 0 1 54 584 Tm
+(  as appropriate.) Tj
+/F1 10 Tf
+1 0 0 1 54 570 Tm
+(- Persist user corrections as first-class dataset events linked to the draft analysis.) Tj
+/F1 10 Tf
+1 0 0 1 54 556 Tm
+(- API docs and examples should show portion, ratio, oil-level, and suggestion-based) Tj
+/F1 10 Tf
+1 0 0 1 54 542 Tm
+(  correction payloads.) Tj
+/F1 10 Tf
+1 0 0 1 54 528 Tm
+(- Tests: valid correction updates macros; missing analysis returns 404; logged meal cannot) Tj
+/F1 10 Tf
+1 0 0 1 54 514 Tm
+(  be corrected unless explicitly allowed; invalid correction values return 422; correction) Tj
+/F1 10 Tf
+1 0 0 1 54 500 Tm
+(  history is stored.) Tj
+/F1 14 Tf
+1 0 0 1 54 472 Tm
+(Stage 7: Add POST /api/v1/meals/{analysis_id}/log) Tj
+/F1 10 Tf
+1 0 0 1 54 452 Tm
+(- Purpose: complete Photo -> corrected macros -> logged meal.) Tj
+/F1 10 Tf
+1 0 0 1 54 438 Tm
+(- Endpoint converts a corrected draft into a logged meal.) Tj
+/F1 10 Tf
+1 0 0 1 54 424 Tm
+(- Store final macros, final items, correction history snapshot, and references back to the) Tj
+/F1 10 Tf
+1 0 0 1 54 410 Tm
+(  original image, AI raw response, and validated v1 JSON.) Tj
+/F1 10 Tf
+1 0 0 1 54 396 Tm
+(- Mark draft as logged or create a separate logged meal record.) Tj
+/F1 10 Tf
+1 0 0 1 54 382 Tm
+(- Prevent duplicate logging by default.) Tj
+/F1 10 Tf
+1 0 0 1 54 368 Tm
+(- Tests: log draft succeeds; already logged draft returns 409; missing analysis returns 404;) Tj
+/F1 10 Tf
+1 0 0 1 54 354 Tm
+(  logged meal stores final corrected macros and complete dataset linkage; manual real-image) Tj
+/F1 10 Tf
+1 0 0 1 54 340 Tm
+(  flow confirms photo -> corrected macros -> logged meal under 10 seconds.) Tj
+/F1 14 Tf
+1 0 0 1 54 312 Tm
+(Stage 8: Retire Or Deprecate Old Nutrition Endpoint) Tj
+/F1 10 Tf
+1 0 0 1 54 292 Tm
+(- Purpose: simplify the API surface after the new meal flow is working.) Tj
+/F1 10 Tf
+1 0 0 1 54 278 Tm
+(- Decide whether /api/v1/nutrition/analyze remains as legacy, is conceptually redirected to) Tj
+/F1 10 Tf
+1 0 0 1 54 264 Tm
+(  the new flow, or is removed before production.) Tj
+/F1 10 Tf
+1 0 0 1 54 250 Tm
+(- If legacy remains, decide whether it also writes the dataset fields or is excluded from) Tj
+/F1 10 Tf
+1 0 0 1 54 236 Tm
+(  the training/evaluation dataset.) Tj
+/F1 10 Tf
+1 0 0 1 54 222 Tm
+(- Update README and tests accordingly.) Tj
+/F1 10 Tf
+1 0 0 1 54 208 Tm
+(- Tests: if kept, legacy endpoint still works; if removed, tests focus only on the new meal) Tj
+/F1 10 Tf
+1 0 0 1 54 194 Tm
+(  flow.) Tj
+/F1 14 Tf
+1 0 0 1 54 166 Tm
+(Recommended Commit Structure) Tj
+/F1 10 Tf
+1 0 0 1 54 146 Tm
+(- docs: define meal logging API flow, v1 client schema, and dataset record) Tj
+/F1 10 Tf
+1 0 0 1 54 132 Tm
+(- schemas: add meal analysis response, correction, logged meal, and dataset models) Tj
+/F1 10 Tf
+1 0 0 1 54 118 Tm
+(- ai: return v1 food-level meal estimates and capture raw responses) Tj
+/F1 10 Tf
+1 0 0 1 54 104 Tm
+(- db: persist draft meal analyses and dataset fields) Tj
+/F1 10 Tf
+1 0 0 1 54 90 Tm
+(- api: add photo analysis meal endpoint with v1 response) Tj
+/F1 10 Tf
+1 0 0 1 54 76 Tm
+(- corrections: add deterministic macro adjustment service) Tj
+ET
+endstream
+endobj
+12 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 612 792] /Resources << /Font << /F1 3 0 R >> >> /Contents 13 0 R >>
+endobj
+13 0 obj
+<< /Length 371 >>
+stream
+BT
+/F1 10 Tf
+1 0 0 1 54 744 Tm
+(- api: add meal correction endpoint and correction history) Tj
+/F1 10 Tf
+1 0 0 1 54 730 Tm
+(- api: add logged meal endpoint with dataset linkage) Tj
+/F1 10 Tf
+1 0 0 1 54 716 Tm
+(- tests: document and add optional real-image smoke test workflow) Tj
+/F1 10 Tf
+1 0 0 1 54 702 Tm
+(- docs: document full MVP meal logging and dataset flow) Tj
+ET
+endstream
+endobj
+xref
+0 14
+0000000000 65535 f 
+0000000009 00000 n 
+0000000058 00000 n 
+0000000141 00000 n 
+0000000211 00000 n 
+0000000337 00000 n 
+0000004572 00000 n 
+0000004698 00000 n 
+0000008848 00000 n 
+0000008974 00000 n 
+0000013311 00000 n 
+0000013439 00000 n 
+0000017585 00000 n 
+0000017713 00000 n 
+trailer
+<< /Size 14 /Root 1 0 R >>
+startxref
+18136
+%%EOF
