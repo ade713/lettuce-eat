@@ -35,6 +35,12 @@ class NutritionAnalysisResponse(NutritionEstimate):
     created_at: datetime | None = None
 
 
+# Keep the legacy nutrition schemas alongside the v1 meal-flow schemas during the staged
+# migration. The current /api/v1/nutrition/analyze endpoint still depends on the legacy
+# shape, while new meal-flow endpoints will gradually adopt the v1 schemas below. Once
+# the meal flow fully replaces the legacy endpoint, these older schemas can be retired.
+
+
 class MacroEstimate(BaseModel):
     """Represent calories and core macros for a detected item or meal total."""
 
@@ -104,3 +110,61 @@ class MealAnalysisResponse(BaseModel):
     meal_totals: MacroEstimate
     overall_confidence: float = Field(ge=0, le=1)
     suggestions: list[Suggestion] = Field(default_factory=list)
+
+
+class MealCorrectionRequest(BaseModel):
+    """Represent a future correction request targeting an analyzed meal item or suggestion."""
+
+    item_id: str
+    correction_type: str
+    value: str | float
+    suggestion_id: str | None = None
+
+
+class CorrectionEvent(BaseModel):
+    """Record one user correction and the macro totals produced by applying it."""
+
+    item_id: str
+    correction_type: str
+    value: str | float
+    resulting_meal_totals: MacroEstimate
+    applied_at: datetime
+    suggestion_id: str | None = None
+
+
+class MealCorrectionResponse(MealAnalysisResponse):
+    """Represent the future response after deterministic correction math updates a draft."""
+
+    correction_history: list[CorrectionEvent] = Field(default_factory=list)
+
+
+class ImageStorageMetadata(BaseModel):
+    """Describe where the original meal image is stored for future dataset use."""
+
+    storage_provider: str
+    image_storage_key: str
+    image_content_type: str
+    image_size_bytes: int = Field(ge=0)
+    image_sha256: str
+
+
+class MealDatasetMetadata(BaseModel):
+    """Preserve the analysis artifacts needed for later evaluation datasets."""
+
+    image: ImageStorageMetadata
+    ai_raw_response: dict
+    validated_json: MealAnalysisResponse
+    correction_history: list[CorrectionEvent] = Field(default_factory=list)
+
+
+class LoggedMealResponse(BaseModel):
+    """Represent a future saved meal created from a corrected analysis draft."""
+
+    meal_id: str
+    analysis_id: str
+    version: Literal["v1"] = "v1"
+    items: list[MealItem]
+    final_totals: MacroEstimate
+    correction_history: list[CorrectionEvent] = Field(default_factory=list)
+    saved_at: datetime
+    dataset: MealDatasetMetadata
