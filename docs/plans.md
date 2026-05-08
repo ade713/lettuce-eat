@@ -106,7 +106,7 @@ Purpose: introduce the data model safely before wiring endpoints.
 Implementation steps:
 
 1. Add Pydantic schemas for the v1 analysis response: `MealAnalysisResponse`, `MealItem`, `MacroEstimate`, `MacroDelta`, `Uncertainty`, `Assumption`, and `Suggestion`.
-2. Add Pydantic schemas for future correction requests/responses, logged meal responses, and dataset metadata without connecting them to endpoints yet.
+2. Add Pydantic schemas for future correction requests/responses, logged meal responses, and dataset metadata without connecting them to endpoints yet: `MealCorrectionRequest`, `CorrectionEvent`, `MealCorrectionResponse`, `ImageStorageMetadata`, `MealDatasetMetadata`, and `LoggedMealResponse`.
 3. Preserve the existing `/api/v1/nutrition/analyze` response and tests unless compatibility aliases are needed.
 4. Add schema-focused tests for valid and invalid payloads.
 5. Update docs only if schema names or validation rules differ from the contract.
@@ -115,7 +115,7 @@ Acceptance criteria:
 
 - Existing API behavior remains unchanged.
 - Existing endpoint tests still pass.
-- New schema tests cover required top-level v1 fields, item IDs, grams, macros, confidence ranges, suggestions, preview deltas, correction payloads, and dataset metadata.
+- New schema tests cover required top-level v1 fields, item IDs, grams, macros, confidence ranges, suggestions, preview deltas, correction payloads, correction history, image storage metadata, dataset metadata, and logged meal linkage.
 - `pytest` and `ruff check .` pass.
 - New or changed Python objects have purpose-focused docstrings, and the stage commit explains what changed and why.
 
