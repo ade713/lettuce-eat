@@ -4,7 +4,7 @@ import json
 from openai import AsyncOpenAI
 
 from app.core.config import Settings
-from app.schemas.nutrition import NutritionEstimate
+from app.schemas.nutrition import MealAnalysisResponse, NutritionEstimate
 
 
 NUTRITION_JSON_SCHEMA = {
@@ -48,6 +48,12 @@ NUTRITION_JSON_SCHEMA = {
         "confidence": {"type": "number", "minimum": 0, "maximum": 1},
     },
 }
+
+
+def parse_meal_analysis_output(output_text: str) -> MealAnalysisResponse:
+    """Validate raw provider JSON text against the planned v1 meal analysis schema."""
+
+    return MealAnalysisResponse.model_validate(json.loads(output_text))
 
 
 class NutritionAIService:
