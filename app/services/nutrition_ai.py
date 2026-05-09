@@ -1,10 +1,30 @@
 import base64
 import json
+from dataclasses import dataclass
+from typing import Any, Protocol, runtime_checkable
 
 from openai import AsyncOpenAI
 
 from app.core.config import Settings
 from app.schemas.nutrition import MealAnalysisResponse, NutritionEstimate
+
+
+@dataclass(frozen=True)
+class MealAnalysisAIResult:
+    """Bundle the raw provider response with the validated v1 meal analysis."""
+
+    ai_raw_response: dict[str, Any]
+    validated_json: MealAnalysisResponse
+
+
+@runtime_checkable
+class _ModelDumpResponse(Protocol):
+    """Describe SDK responses that can expose their raw payload as JSON-safe data."""
+
+    def model_dump(self, *, mode: str) -> dict[str, Any]:
+        """Return a dictionary representation of the provider response."""
+
+        ...
 
 
 NUTRITION_JSON_SCHEMA = {
@@ -183,6 +203,18 @@ def parse_meal_analysis_output(output_text: str) -> MealAnalysisResponse:
     return MealAnalysisResponse.model_validate(json.loads(output_text))
 
 
+def _provider_raw_response(response: Any) -> dict[str, Any]:
+    """Convert an AI SDK response into a persistable raw response dictionary."""
+
+    raw_response = response.model_dump(mode="json") if isinstance(response, _ModelDumpResponse) else {}
+
+    output_text = getattr(response, "output_text", None)
+    if output_text is not None:
+        raw_response.setdefault("output_text", output_text)
+
+    return raw_response
+
+
 class NutritionAIService:
     """Analyze uploaded meal images with the configured OpenAI vision model."""
 
@@ -194,8 +226,8 @@ class NutritionAIService:
 
     async def analyze_meal_image(
         self, *, image_bytes: bytes, content_type: str, notes: str | None
-    ) -> MealAnalysisResponse:
-        """Send a meal image to the AI model and validate the planned v1 response."""
+    ) -> MealAnalysisAIResult:
+        """Send a meal image and return raw plus validated v1 analysis output."""
 
         data_url = _image_data_url(image_bytes=image_bytes, content_type=content_type)
         notes_text = f"\nAdditional client notes: {notes}" if notes else ""
@@ -233,7 +265,10 @@ class NutritionAIService:
             },
         )
 
-        return parse_meal_analysis_output(response.output_text)
+        return MealAnalysisAIResult(
+            ai_raw_response=_provider_raw_response(response),
+            validated_json=parse_meal_analysis_output(response.output_text),
+        )
 
     # Keep this legacy method separate from analyze_meal_image while the v1 meal-flow
     # contract is still being staged. Once the new endpoint replaces this response

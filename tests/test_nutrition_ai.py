@@ -5,8 +5,12 @@ import pytest
 from pydantic import ValidationError
 
 from app.core.config import Settings
-from app.schemas.nutrition import MealAnalysisResponse
-from app.services.nutrition_ai import MEAL_ANALYSIS_JSON_SCHEMA, NutritionAIService, parse_meal_analysis_output
+from app.services.nutrition_ai import (
+    MEAL_ANALYSIS_JSON_SCHEMA,
+    MealAnalysisAIResult,
+    NutritionAIService,
+    parse_meal_analysis_output,
+)
 
 
 def _meal_analysis_output() -> dict[str, Any]:
@@ -124,7 +128,7 @@ def test_analyze_meal_image_uses_v1_prompt_schema_and_parser():
 
     import anyio
 
-    async def run_analysis() -> MealAnalysisResponse:
+    async def run_analysis() -> MealAnalysisAIResult:
         """Call the keyword-only service method from anyio.run."""
 
         return await service.analyze_meal_image(
@@ -133,11 +137,12 @@ def test_analyze_meal_image_uses_v1_prompt_schema_and_parser():
             notes="Dinner plate",
         )
 
-    parsed = anyio.run(run_analysis)
+    result = anyio.run(run_analysis)
 
     request = fake_client.responses.kwargs
     assert request is not None
-    assert parsed.analysis_id == "analysis_123"
+    assert result.validated_json.analysis_id == "analysis_123"
+    assert result.ai_raw_response["output_text"] == _FakeResponse.output_text
     assert request["model"] == "test-model"
     assert request["text"]["format"]["name"] == "meal_analysis_v1"
     assert request["text"]["format"]["schema"] == MEAL_ANALYSIS_JSON_SCHEMA
