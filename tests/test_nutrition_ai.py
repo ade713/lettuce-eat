@@ -1,12 +1,15 @@
 import json
+from typing import Any, cast
 
 import pytest
 from pydantic import ValidationError
 
-from app.services.nutrition_ai import parse_meal_analysis_output
+from app.core.config import Settings
+from app.schemas.nutrition import MealAnalysisResponse
+from app.services.nutrition_ai import MEAL_ANALYSIS_JSON_SCHEMA, NutritionAIService, parse_meal_analysis_output
 
 
-def _meal_analysis_output() -> dict:
+def _meal_analysis_output() -> dict[str, Any]:
     """Return a raw provider-style payload for the planned v1 analysis contract."""
 
     return {
@@ -78,3 +81,66 @@ def test_parse_meal_analysis_output_rejects_incomplete_provider_json():
 
     with pytest.raises(ValidationError):
         parse_meal_analysis_output(json.dumps(payload))
+
+
+class _FakeResponse:
+    """Return object that mimics the OpenAI SDK response shape used by the service."""
+
+    output_text: str = json.dumps(_meal_analysis_output())
+
+
+class _FakeResponsesClient:
+    """Capture OpenAI request arguments while returning deterministic output."""
+
+    def __init__(self) -> None:
+        """Initialize a request capture slot for assertions."""
+
+        self.kwargs: dict[str, Any] | None = None
+
+    async def create(self, **kwargs: Any) -> _FakeResponse:
+        """Store request kwargs and return a fake model response."""
+
+        self.kwargs = kwargs
+        return _FakeResponse()
+
+
+class _FakeOpenAIClient:
+    """Expose a responses client compatible with NutritionAIService."""
+
+    def __init__(self) -> None:
+        """Create the fake responses API surface."""
+
+        self.responses: _FakeResponsesClient = _FakeResponsesClient()
+
+
+def test_analyze_meal_image_uses_v1_prompt_schema_and_parser():
+    """Validate the internal v1 analysis path requests and parses meal-flow output."""
+
+    service = NutritionAIService(
+        Settings(OPENAI_API_KEY="test-key", OPENAI_MODEL="test-model")
+    )
+    fake_client = _FakeOpenAIClient()
+    cast(Any, service)._client = fake_client
+
+    import anyio
+
+    async def run_analysis() -> MealAnalysisResponse:
+        """Call the keyword-only service method from anyio.run."""
+
+        return await service.analyze_meal_image(
+            image_bytes=b"fake-image-bytes",
+            content_type="image/jpeg",
+            notes="Dinner plate",
+        )
+
+    parsed = anyio.run(run_analysis)
+
+    request = fake_client.responses.kwargs
+    assert request is not None
+    assert parsed.analysis_id == "analysis_123"
+    assert request["model"] == "test-model"
+    assert request["text"]["format"]["name"] == "meal_analysis_v1"
+    assert request["text"]["format"]["schema"] == MEAL_ANALYSIS_JSON_SCHEMA
+    assert "fast logging workflow" in request["input"][0]["content"][0]["text"]
+    assert "Dinner plate" in request["input"][1]["content"][0]["text"]
+    assert request["input"][1]["content"][1]["image_url"].startswith("data:image/jpeg;base64,")
