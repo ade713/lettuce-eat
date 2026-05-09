@@ -149,3 +149,29 @@ def test_analyze_meal_image_uses_v1_prompt_schema_and_parser():
     assert "fast logging workflow" in request["input"][0]["content"][0]["text"]
     assert "Dinner plate" in request["input"][1]["content"][0]["text"]
     assert request["input"][1]["content"][1]["image_url"].startswith("data:image/jpeg;base64,")
+
+
+def test_shared_fake_ai_service_returns_deterministic_v1_meal_analysis(
+    fake_nutrition_ai_service,
+):
+    """Validate shared test fake data covers the planned v1 meal-flow output."""
+
+    import anyio
+
+    async def run_analysis() -> MealAnalysisAIResult:
+        """Call the shared fake service through the future meal-flow method."""
+
+        return await fake_nutrition_ai_service.analyze_meal_image(
+            image_bytes=b"fake-image-bytes",
+            content_type="image/jpeg",
+            notes="Dinner plate",
+        )
+
+    result = anyio.run(run_analysis)
+
+    assert result.validated_json.analysis_id == "analysis_test_123"
+    assert result.validated_json.items[0].label == "chicken rice bowl"
+    assert result.validated_json.meal_totals.calories == 640
+    assert result.validated_json.suggestions[0].preview_delta.calories == -80
+    assert result.ai_raw_response["output_text"]["analysis_id"] == "analysis_test_123"
+
