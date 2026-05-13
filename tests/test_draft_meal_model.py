@@ -96,6 +96,14 @@ async def test_draft_meal_analysis_record_can_be_created_and_retrieved(
 
     assert retrieved is not None
     assert retrieved.id == draft.id
+    assert retrieved.status == "draft"
+    assert retrieved.image_storage_metadata == {}
+    assert retrieved.validated_json == {}
+    assert retrieved.detected_items == []
+    assert retrieved.ai_raw_response == {}
+    assert retrieved.original_meal_totals == {}
+    assert retrieved.current_meal_totals == {}
+    assert retrieved.correction_history == []
     assert retrieved.created_at is not None
     assert retrieved.updated_at is not None
 
