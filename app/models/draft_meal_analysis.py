@@ -28,8 +28,15 @@ class DraftMealAnalysis(Base):
     id: Mapped[UUID] = mapped_column(primary_key=True, default=uuid4)
     status: Mapped[str] = mapped_column(String(50), default="draft", nullable=False)
 
-    # AI and validated analysis payloads
+    # Image storage metadata
+    image_storage_provider: Mapped[str] = mapped_column(String(50), nullable=False)
+    image_storage_key: Mapped[str] = mapped_column(String(500), nullable=False)
+    image_content_type: Mapped[str] = mapped_column(String(100), nullable=False)
+    image_size_bytes: Mapped[int] = mapped_column(nullable=False)
+    image_sha256: Mapped[str] = mapped_column(String(64), nullable=False)
     image_storage_metadata: Mapped[dict[str, object]] = _json_column(default=dict)
+
+    # AI and validated analysis payloads
     validated_json: Mapped[dict[str, object]] = _json_column(default=dict)
     detected_items: Mapped[list[dict[str, object]]] = _json_column(default=list)
     ai_raw_response: Mapped[dict[str, object]] = _json_column(default=dict)
