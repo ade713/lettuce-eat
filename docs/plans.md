@@ -147,7 +147,7 @@ Purpose: persist analysis drafts separately from final logged meals and preserve
 Implementation steps:
 
 1. Add a new draft meal model/table rather than expanding the existing `NutritionAnalysis` model into the full meal-flow domain.
-2. Add fields for status, image storage metadata, validated v1 response JSON, detected items JSON, original meal totals, current corrected totals, correction history, and AI raw response.
+2. Add fields for status, image storage metadata, validated v1 response JSON, detected items JSON, original meal totals, current meal totals, correction history, and AI raw response.
 3. Add local image storage metadata fields needed for the future `ImageStorageService` integration: provider, key, content type, byte size, and SHA-256.
 4. Keep existing endpoint behavior working during this storage addition.
 5. Add model/persistence tests using the current in-memory test database pattern.
