@@ -12,14 +12,24 @@ async def test_analyze_meal_photo_returns_v1_response_and_persists_draft(
 ):
     """Verify valid uploads store a draft analysis and return canonical v1 JSON."""
 
+    image_bytes = b"fake-image-bytes"
+
     response = await client.post(
         "/api/v1/meals/analyze-photo",
-        files={"image": ("meal.jpg", b"fake-image-bytes", "image/jpeg")},
+        files={"image": ("meal.jpg", image_bytes, "image/jpeg")},
         data={"notes": "Dinner plate"},
     )
 
     assert response.status_code == 201
     body = response.json()
+    assert set(body) == {
+        "analysis_id",
+        "version",
+        "items",
+        "meal_totals",
+        "overall_confidence",
+        "suggestions",
+    }
     assert body["version"] == "v1"
     assert body["items"][0]["label"] == "chicken rice bowl"
     assert body["meal_totals"]["calories"] == 640
@@ -33,7 +43,7 @@ async def test_analyze_meal_photo_returns_v1_response_and_persists_draft(
     assert draft.status == "analyzed"
     assert draft.image_storage_key == "meal-images/test.jpg"
     assert draft.image_content_type == "image/jpeg"
-    assert draft.image_size_bytes == len(b"fake-image-bytes")
+    assert draft.image_size_bytes == len(image_bytes)
     assert draft.validated_json["analysis_id"] == body["analysis_id"]
     assert draft.detected_items[0]["label"] == "chicken rice bowl"
     assert draft.original_meal_totals == body["meal_totals"]
