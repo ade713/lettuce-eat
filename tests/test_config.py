@@ -11,10 +11,12 @@ def test_settings_default_local_storage_root():
     assert settings.local_storage_root == Path("storage")
 
 
-def test_settings_reads_local_storage_root_alias():
+def test_settings_reads_local_storage_root_alias(monkeypatch):
     """Verify LOCAL_STORAGE_ROOT can move local image storage without code changes."""
 
     storage_root = Path("/tmp/lettuce-eat-images")
-    settings = Settings(LOCAL_STORAGE_ROOT=storage_root)
+    monkeypatch.setenv("LOCAL_STORAGE_ROOT", str(storage_root))
 
-    assert settings.local_storage_root == Path("/tmp/lettuce-eat-images")
+    settings = Settings()
+
+    assert settings.local_storage_root == storage_root
