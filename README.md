@@ -74,6 +74,7 @@ The response includes calories, macros, likely ingredients, assumptions, confide
 - `OPENAI_API_KEY`: API key for the AI provider
 - `OPENAI_MODEL`: model used for image analysis
 - `MAX_UPLOAD_MB`: maximum accepted upload size
+- `LOCAL_STORAGE_ROOT`: local directory for stored meal images, defaulting to `storage`
 
 ## API notes
 
