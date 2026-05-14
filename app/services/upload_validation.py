@@ -1,3 +1,5 @@
+from dataclasses import dataclass
+
 from fastapi import HTTPException, UploadFile, status
 
 from app.core.config import Settings
@@ -7,10 +9,19 @@ UNSUPPORTED_IMAGE_DETAIL = "Upload must be a JPEG, PNG, WEBP, or non-animated GI
 EMPTY_IMAGE_DETAIL = "Image is empty."
 
 
-async def read_valid_image_upload(*, image: UploadFile, settings: Settings) -> bytes:
-    """Read image bytes after applying shared upload constraints for meal photos."""
+@dataclass(frozen=True)
+class ValidatedImageUpload:
+    """Image upload bytes and metadata after shared validation has passed."""
 
-    if image.content_type not in SUPPORTED_IMAGE_TYPES:
+    image_bytes: bytes
+    content_type: str
+
+
+async def read_valid_image_upload(*, image: UploadFile, settings: Settings) -> ValidatedImageUpload:
+    """Read image bytes and content type after applying shared meal photo constraints."""
+
+    content_type = image.content_type
+    if content_type not in SUPPORTED_IMAGE_TYPES:
         raise HTTPException(
             status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
             detail=UNSUPPORTED_IMAGE_DETAIL,
@@ -26,4 +37,4 @@ async def read_valid_image_upload(*, image: UploadFile, settings: Settings) -> b
             detail=f"Image exceeds {settings.max_upload_mb} MB limit.",
         )
 
-    return image_bytes
+    return ValidatedImageUpload(image_bytes=image_bytes, content_type=content_type)

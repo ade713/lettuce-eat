@@ -48,13 +48,12 @@ async def analyze_meal_photo(
 ) -> MealAnalysisResponse:
     """Store a meal photo, run AI analysis, persist a draft, and return v1 output."""
 
-    image_bytes = await read_valid_image_upload(image=image, settings=settings)
-    content_type = str(image.content_type)
+    upload = await read_valid_image_upload(image=image, settings=settings)
     image_metadata = await image_storage.store_image(
-        image_bytes=image_bytes, content_type=content_type
+        image_bytes=upload.image_bytes, content_type=upload.content_type
     )
     ai_result = await nutrition_ai.analyze_meal_image(
-        image_bytes=image_bytes, content_type=content_type, notes=notes
+        image_bytes=upload.image_bytes, content_type=upload.content_type, notes=notes
     )
 
     draft_id = uuid4()

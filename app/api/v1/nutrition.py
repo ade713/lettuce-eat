@@ -36,12 +36,13 @@ async def analyze_nutrition(
 ) -> NutritionAnalysisResponse:
     """Validate an uploaded meal image, estimate nutrition, persist it, and return the result."""
 
-    image_bytes = await read_valid_image_upload(image=image, settings=settings)
-    content_type = str(image.content_type)
+    upload = await read_valid_image_upload(image=image, settings=settings)
     estimate = await nutrition_ai.analyze_image(
-        image_bytes=image_bytes, content_type=content_type, notes=notes
+        image_bytes=upload.image_bytes, content_type=upload.content_type, notes=notes
     )
-    record = _record_from_estimate(estimate, content_type, len(image_bytes), notes)
+    record = _record_from_estimate(
+        estimate, upload.content_type, len(upload.image_bytes), notes
+    )
 
     session.add(record)
     await session.commit()

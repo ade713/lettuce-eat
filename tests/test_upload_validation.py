@@ -24,15 +24,16 @@ def _settings_with_max_upload_mb(max_upload_mb: int) -> Settings:
     return Settings.model_validate({"MAX_UPLOAD_MB": max_upload_mb})
 
 
-async def test_read_valid_image_upload_returns_image_bytes():
-    """Verify valid image uploads are read and returned unchanged."""
+async def test_read_valid_image_upload_returns_validated_payload():
+    """Verify valid image uploads return bytes and narrowed content type."""
 
     image_bytes = b"fake-image-bytes"
     image = _upload_file(content=image_bytes, content_type="image/jpeg")
 
     result = await read_valid_image_upload(image=image, settings=_settings_with_max_upload_mb(10))
 
-    assert result == image_bytes
+    assert result.image_bytes == image_bytes
+    assert result.content_type == "image/jpeg"
 
 
 async def test_read_valid_image_upload_rejects_unsupported_content_type():

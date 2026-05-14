@@ -39,7 +39,9 @@ async def test_analyze_meal_photo_returns_v1_response_and_persists_draft(
     assert draft.original_meal_totals == body["meal_totals"]
     assert draft.current_meal_totals == body["meal_totals"]
     assert draft.correction_history == []
-    assert draft.ai_raw_response["output_text"]["analysis_id"] == "analysis_test_123"
+    raw_output = draft.ai_raw_response["output_text"]
+    assert isinstance(raw_output, dict)
+    assert raw_output["analysis_id"] == "analysis_test_123"
 
 
 async def test_analyze_meal_photo_rejects_non_image_upload(client):
