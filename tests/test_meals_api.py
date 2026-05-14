@@ -1,5 +1,16 @@
-async def test_analyze_meal_photo_endpoint_is_registered_for_stage_four(client):
-    """Verify a valid upload reaches the staged meal-flow implementation boundary."""
+from uuid import UUID
+
+from sqlalchemy import select
+from sqlalchemy.ext.asyncio import AsyncSession, async_sessionmaker
+
+from app.models import DraftMealAnalysis
+
+
+async def test_analyze_meal_photo_returns_v1_response_and_persists_draft(
+    client,
+    session_factory: async_sessionmaker[AsyncSession],
+):
+    """Verify valid uploads store a draft analysis and return canonical v1 JSON."""
 
     response = await client.post(
         "/api/v1/meals/analyze-photo",
@@ -7,8 +18,28 @@ async def test_analyze_meal_photo_endpoint_is_registered_for_stage_four(client):
         data={"notes": "Dinner plate"},
     )
 
-    assert response.status_code == 501
-    assert response.json()["detail"] == "Meal photo analysis endpoint is not implemented yet."
+    assert response.status_code == 201
+    body = response.json()
+    assert body["version"] == "v1"
+    assert body["items"][0]["label"] == "chicken rice bowl"
+    assert body["meal_totals"]["calories"] == 640
+
+    async with session_factory() as session:
+        draft = await session.scalar(
+            select(DraftMealAnalysis).where(DraftMealAnalysis.id == UUID(body["analysis_id"]))
+        )
+
+    assert draft is not None
+    assert draft.status == "analyzed"
+    assert draft.image_storage_key == "meal-images/test.jpg"
+    assert draft.image_content_type == "image/jpeg"
+    assert draft.image_size_bytes == len(b"fake-image-bytes")
+    assert draft.validated_json["analysis_id"] == body["analysis_id"]
+    assert draft.detected_items[0]["label"] == "chicken rice bowl"
+    assert draft.original_meal_totals == body["meal_totals"]
+    assert draft.current_meal_totals == body["meal_totals"]
+    assert draft.correction_history == []
+    assert draft.ai_raw_response["output_text"]["analysis_id"] == "analysis_test_123"
 
 
 async def test_analyze_meal_photo_rejects_non_image_upload(client):
