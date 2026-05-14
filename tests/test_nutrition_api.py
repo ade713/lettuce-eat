@@ -9,6 +9,17 @@ async def test_analyze_nutrition_accepts_image_and_persists_result(client):
 
     assert response.status_code == 201
     body = response.json()
+    assert set(body) == {
+        "id",
+        "created_at",
+        "food_name",
+        "portion_description",
+        "calories_kcal",
+        "macros",
+        "ingredients",
+        "assumptions",
+        "confidence",
+    }
     assert body["id"]
     assert body["food_name"] == "Chicken rice bowl"
     assert body["calories_kcal"] == 640
