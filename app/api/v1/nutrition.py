@@ -9,10 +9,10 @@ from app.db.session import get_db_session
 from app.models.nutrition_analysis import NutritionAnalysis
 from app.schemas.nutrition import NutritionAnalysisResponse, NutritionEstimate
 from app.services.nutrition_ai import NutritionAIService
+from app.services.upload_validation import read_valid_image_upload
 
 router = APIRouter(prefix="/nutrition", tags=["nutrition"])
 
-SUPPORTED_IMAGE_TYPES = {"image/jpeg", "image/png", "image/webp", "image/gif"}
 
 
 def get_nutrition_ai_service(settings: Settings = Depends(get_settings)) -> NutritionAIService:
@@ -36,26 +36,12 @@ async def analyze_nutrition(
 ) -> NutritionAnalysisResponse:
     """Validate an uploaded meal image, estimate nutrition, persist it, and return the result."""
 
-    if image.content_type not in SUPPORTED_IMAGE_TYPES:
-        raise HTTPException(
-            status_code=status.HTTP_415_UNSUPPORTED_MEDIA_TYPE,
-            detail="Upload must be a JPEG, PNG, WEBP, or non-animated GIF image.",
-        )
-
-    image_bytes = await image.read()
-    max_bytes = settings.max_upload_mb * 1024 * 1024
-    if not image_bytes:
-        raise HTTPException(status_code=status.HTTP_400_BAD_REQUEST, detail="Image is empty.")
-    if len(image_bytes) > max_bytes:
-        raise HTTPException(
-            status_code=status.HTTP_413_REQUEST_ENTITY_TOO_LARGE,
-            detail=f"Image exceeds {settings.max_upload_mb} MB limit.",
-        )
-
+    image_bytes = await read_valid_image_upload(image=image, settings=settings)
+    content_type = str(image.content_type)
     estimate = await nutrition_ai.analyze_image(
-        image_bytes=image_bytes, content_type=image.content_type, notes=notes
+        image_bytes=image_bytes, content_type=content_type, notes=notes
     )
-    record = _record_from_estimate(estimate, image.content_type, len(image_bytes), notes)
+    record = _record_from_estimate(estimate, content_type, len(image_bytes), notes)
 
     session.add(record)
     await session.commit()
