@@ -144,7 +144,7 @@ MVP local storage result shape:
 ```json
 {
   "storage_provider": "local",
-  "image_storage_key": "meal-images/2026/05/<uuid>.jpg",
+  "image_storage_key": "meal-images/<uuid>.jpg",
   "image_content_type": "image/jpeg",
   "image_size_bytes": 123456,
   "image_sha256": "..."
@@ -166,5 +166,13 @@ Acceptance flow:
 5. Log the meal after the log endpoint exists.
 6. Confirm the total flow can complete in under 10 seconds.
 7. Confirm dataset fields are persisted.
+
+Stage 4 real-image curl:
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/meals/analyze-photo" \
+  -F "image=@/path/to/meal.jpg" \
+  -F "notes=Manual real-image Stage 4 check"
+```
 
 Do not assert exact nutrition values from real-image output.

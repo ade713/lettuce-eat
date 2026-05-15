@@ -14,7 +14,6 @@ from app.services.upload_validation import read_valid_image_upload
 router = APIRouter(prefix="/nutrition", tags=["nutrition"])
 
 
-
 def get_nutrition_ai_service(settings: Settings = Depends(get_settings)) -> NutritionAIService:
     """Build the nutrition AI service after confirming OpenAI credentials are configured."""
 

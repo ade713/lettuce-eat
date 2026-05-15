@@ -94,7 +94,7 @@ def _draft_from_analysis(
         validated_json=analysis_payload,
         detected_items=[item.model_dump(mode="json") for item in analysis.items],
         original_meal_totals=meal_totals,
-        current_meal_totals=meal_totals,
+        current_meal_totals=meal_totals.copy(),
         correction_history=[],
         ai_raw_response=ai_raw_response,
     )
