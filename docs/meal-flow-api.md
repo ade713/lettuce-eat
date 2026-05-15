@@ -45,6 +45,60 @@ Converts the corrected draft analysis into a logged meal.
 
 Returns the logged meal ID and final macros.
 
+## Current Stage 4 Sequence
+
+The implemented Stage 4 flow accepts a meal photo, stores the original image, runs AI once, persists a draft analysis, and returns the public v1 response.
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant MealsAPI as POST /api/v1/meals/analyze-photo
+    participant UploadValidation as Upload Validation
+    participant ImageStorage as ImageStorageService
+    participant AI as NutritionAIService
+    participant DB as DraftMealAnalysis DB
+
+    Client->>MealsAPI: Upload meal image + optional notes
+    MealsAPI->>UploadValidation: Validate content type, size, empty file
+    UploadValidation-->>MealsAPI: ValidatedImageUpload(bytes, content_type)
+
+    MealsAPI->>ImageStorage: store_image(bytes, content_type)
+    ImageStorage-->>MealsAPI: ImageStorageMetadata(provider, key, type, size, sha256)
+
+    MealsAPI->>AI: analyze_meal_image(bytes, content_type, notes)
+    AI-->>MealsAPI: raw AI response + validated v1 JSON
+
+    MealsAPI->>MealsAPI: Generate draft analysis_id
+    MealsAPI->>MealsAPI: Replace AI analysis_id with draft ID
+    MealsAPI->>DB: Persist DraftMealAnalysis
+    DB-->>MealsAPI: Commit draft
+
+    MealsAPI-->>Client: Canonical v1 MealAnalysisResponse
+```
+
+The legacy nutrition endpoint remains available during this migration and keeps returning the legacy response shape.
+
+```mermaid
+sequenceDiagram
+    actor Client
+    participant NutritionAPI as POST /api/v1/nutrition/analyze
+    participant UploadValidation as Upload Validation
+    participant AI as NutritionAIService
+    participant DB as NutritionAnalysis DB
+
+    Client->>NutritionAPI: Upload image + optional notes
+    NutritionAPI->>UploadValidation: Validate content type, size, empty file
+    UploadValidation-->>NutritionAPI: ValidatedImageUpload(bytes, content_type)
+
+    NutritionAPI->>AI: analyze_image(bytes, content_type, notes)
+    AI-->>NutritionAPI: Legacy NutritionEstimate
+
+    NutritionAPI->>DB: Persist NutritionAnalysis
+    DB-->>NutritionAPI: Commit + refresh
+
+    NutritionAPI-->>Client: Legacy NutritionAnalysisResponse
+```
+
 ## Canonical v1 Analysis Response
 
 ```json
