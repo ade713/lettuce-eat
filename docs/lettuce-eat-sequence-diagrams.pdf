@@ -1,0 +1,171 @@
+%PDF-1.4
+%‚„œ”
+1 0 obj
+<< /Type /Catalog /Pages 2 0 R >>
+endobj
+2 0 obj
+<< /Type /Pages /Kids [2 0 R 4 0 R] /Count 2 >>
+endobj
+3 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>
+endobj
+4 0 obj
+<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica-Bold >>
+endobj
+5 0 obj
+<< /Length 2836 >>
+stream
+BT /F2 18 Tf 42 570 Td (Lettuce Eat Stage 4: Meal Photo Analysis) Tj ET
+BT /F1 10 Tf 42 550 Td (Implemented flow for POST /api/v1/meals/analyze-photo) Tj ET
+0.95 g -16.0 502 116 30 re f
+0.2 G -16.0 502 116 30 re S
+BT /F2 8 Tf -8.0 514 Td (Client) Tj ET
+0.65 G 0.5 w 42.0 502 m 42.0 60 l S
+0.95 g 125.6 502 116 30 re f
+0.2 G 125.6 502 116 30 re S
+BT /F2 8 Tf 133.6 514 Td (Meals API) Tj ET
+0.65 G 0.5 w 183.6 502 m 183.6 60 l S
+0.95 g 267.2 502 116 30 re f
+0.2 G 267.2 502 116 30 re S
+BT /F2 8 Tf 275.2 514 Td (Upload Validation) Tj ET
+0.65 G 0.5 w 325.2 502 m 325.2 60 l S
+0.95 g 408.79999999999995 502 116 30 re f
+0.2 G 408.79999999999995 502 116 30 re S
+BT /F2 8 Tf 416.79999999999995 514 Td (Image Storage) Tj ET
+0.65 G 0.5 w 466.79999999999995 502 m 466.79999999999995 60 l S
+0.95 g 550.4 502 116 30 re f
+0.2 G 550.4 502 116 30 re S
+BT /F2 8 Tf 558.4 514 Td (Nutrition AI) Tj ET
+0.65 G 0.5 w 608.4 502 m 608.4 60 l S
+0.95 g 692.0 502 116 30 re f
+0.2 G 692.0 502 116 30 re S
+BT /F2 8 Tf 700.0 514 Td (Draft DB) Tj ET
+0.65 G 0.5 w 750.0 502 m 750.0 60 l S
+0 G 0.8 w 42.0 468 m 183.6 468 l S
+0 G 183.6 468 m 177.6 472 l S
+0 G 183.6 468 m 177.6 464 l S
+BT /F1 8 Tf 50.0 475 Td (Upload meal image + notes) Tj ET
+0 G 0.8 w 183.6 431 m 325.2 431 l S
+0 G 325.2 431 m 319.2 435 l S
+0 G 325.2 431 m 319.2 427 l S
+BT /F1 8 Tf 191.6 438 Td (Validate type, size, empty file) Tj ET
+0 G 0.8 w 325.2 394 m 183.6 394 l S
+0 G 183.6 394 m 189.6 398 l S
+0 G 183.6 394 m 189.6 390 l S
+BT /F1 8 Tf 191.6 401 Td (ValidatedImageUpload) Tj ET
+0 G 0.8 w 183.6 357 m 466.79999999999995 357 l S
+0 G 466.79999999999995 357 m 460.79999999999995 361 l S
+0 G 466.79999999999995 357 m 460.79999999999995 353 l S
+BT /F1 8 Tf 191.6 364 Td (store_image\(bytes, content_type\)) Tj ET
+0 G 0.8 w 466.79999999999995 320 m 183.6 320 l S
+0 G 183.6 320 m 189.6 324 l S
+0 G 183.6 320 m 189.6 316 l S
+BT /F1 8 Tf 191.6 327 Td (ImageStorageMetadata) Tj ET
+0 G 0.8 w 183.6 283 m 608.4 283 l S
+0 G 608.4 283 m 602.4 287 l S
+0 G 608.4 283 m 602.4 279 l S
+BT /F1 8 Tf 191.6 290 Td (analyze_meal_image\(...\)) Tj ET
+0 G 0.8 w 608.4 246 m 183.6 246 l S
+0 G 183.6 246 m 189.6 250 l S
+0 G 183.6 246 m 189.6 242 l S
+BT /F1 8 Tf 191.6 253 Td (raw response + validated v1 JSON) Tj ET
+0 G 0.8 w 183.6 209 m 183.6 209 l S
+0 G 183.6 209 m 189.6 213 l S
+0 G 183.6 209 m 189.6 205 l S
+BT /F1 8 Tf 191.6 216 Td (Generate draft analysis_id) Tj ET
+0 G 0.8 w 183.6 172 m 750.0 172 l S
+0 G 750.0 172 m 744.0 176 l S
+0 G 750.0 172 m 744.0 168 l S
+BT /F1 8 Tf 191.6 179 Td (Persist DraftMealAnalysis) Tj ET
+0 G 0.8 w 750.0 135 m 183.6 135 l S
+0 G 183.6 135 m 189.6 139 l S
+0 G 183.6 135 m 189.6 131 l S
+BT /F1 8 Tf 191.6 142 Td (Commit draft) Tj ET
+0 G 0.8 w 183.6 98 m 42.0 98 l S
+0 G 42.0 98 m 48.0 102 l S
+0 G 42.0 98 m 48.0 94 l S
+BT /F1 8 Tf 50.0 105 Td (Canonical v1 MealAnalysisResponse) Tj ET
+
+endstream
+endobj
+6 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 792 612] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 1 0 R >>
+endobj
+7 0 obj
+<< /Length 2096 >>
+stream
+BT /F2 18 Tf 42 570 Td (Lettuce Eat Stage 4: Legacy Nutrition Endpoint) Tj ET
+BT /F1 10 Tf 42 550 Td (Compatibility flow kept available during the meal-flow migration) Tj ET
+0.95 g -16.0 502 116 30 re f
+0.2 G -16.0 502 116 30 re S
+BT /F2 8 Tf -8.0 514 Td (Client) Tj ET
+0.65 G 0.5 w 42.0 502 m 42.0 60 l S
+0.95 g 161.0 502 116 30 re f
+0.2 G 161.0 502 116 30 re S
+BT /F2 8 Tf 169.0 514 Td (Nutrition API) Tj ET
+0.65 G 0.5 w 219.0 502 m 219.0 60 l S
+0.95 g 338.0 502 116 30 re f
+0.2 G 338.0 502 116 30 re S
+BT /F2 8 Tf 346.0 514 Td (Upload Validation) Tj ET
+0.65 G 0.5 w 396.0 502 m 396.0 60 l S
+0.95 g 515.0 502 116 30 re f
+0.2 G 515.0 502 116 30 re S
+BT /F2 8 Tf 523.0 514 Td (Nutrition AI) Tj ET
+0.65 G 0.5 w 573.0 502 m 573.0 60 l S
+0.95 g 692.0 502 116 30 re f
+0.2 G 692.0 502 116 30 re S
+BT /F2 8 Tf 700.0 514 Td (Nutrition DB) Tj ET
+0.65 G 0.5 w 750.0 502 m 750.0 60 l S
+0 G 0.8 w 42.0 468 m 219.0 468 l S
+0 G 219.0 468 m 213.0 472 l S
+0 G 219.0 468 m 213.0 464 l S
+BT /F1 8 Tf 50.0 475 Td (Upload image + notes) Tj ET
+0 G 0.8 w 219.0 431 m 396.0 431 l S
+0 G 396.0 431 m 390.0 435 l S
+0 G 396.0 431 m 390.0 427 l S
+BT /F1 8 Tf 227.0 438 Td (Validate type, size, empty file) Tj ET
+0 G 0.8 w 396.0 394 m 219.0 394 l S
+0 G 219.0 394 m 225.0 398 l S
+0 G 219.0 394 m 225.0 390 l S
+BT /F1 8 Tf 227.0 401 Td (ValidatedImageUpload) Tj ET
+0 G 0.8 w 219.0 357 m 573.0 357 l S
+0 G 573.0 357 m 567.0 361 l S
+0 G 573.0 357 m 567.0 353 l S
+BT /F1 8 Tf 227.0 364 Td (analyze_image\(...\)) Tj ET
+0 G 0.8 w 573.0 320 m 219.0 320 l S
+0 G 219.0 320 m 225.0 324 l S
+0 G 219.0 320 m 225.0 316 l S
+BT /F1 8 Tf 227.0 327 Td (Legacy NutritionEstimate) Tj ET
+0 G 0.8 w 219.0 283 m 750.0 283 l S
+0 G 750.0 283 m 744.0 287 l S
+0 G 750.0 283 m 744.0 279 l S
+BT /F1 8 Tf 227.0 290 Td (Persist NutritionAnalysis) Tj ET
+0 G 0.8 w 750.0 246 m 219.0 246 l S
+0 G 219.0 246 m 225.0 250 l S
+0 G 219.0 246 m 225.0 242 l S
+BT /F1 8 Tf 227.0 253 Td (Commit + refresh) Tj ET
+0 G 0.8 w 219.0 209 m 42.0 209 l S
+0 G 42.0 209 m 48.0 213 l S
+0 G 42.0 209 m 48.0 205 l S
+BT /F1 8 Tf 50.0 216 Td (Legacy NutritionAnalysisResponse) Tj ET
+
+endstream
+endobj
+8 0 obj
+<< /Type /Page /Parent 2 0 R /MediaBox [0 0 792 612] /Resources << /Font << /F1 3 0 R /F2 4 0 R >> >> /Contents 3 0 R >>
+endobj
+xref
+0 9
+0000000000 65535 f 
+0000000015 00000 n 
+0000000064 00000 n 
+0000000127 00000 n 
+0000000197 00000 n 
+0000000272 00000 n 
+0000003160 00000 n 
+0000003296 00000 n 
+0000005444 00000 n 
+trailer << /Size 9 /Root 1 0 R >>
+startxref
+5580
+%%EOF

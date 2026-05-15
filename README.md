@@ -58,7 +58,17 @@ ruff check .
 
 The tests use an in-memory SQLite database and a mocked AI service, so they do not require Postgres, Docker, or an OpenAI API key.
 
-## Main endpoint
+## Meal analysis endpoints
+
+The staged meal-flow endpoint returns the canonical v1 analysis response and stores the original image plus draft analysis data for later correction and logging.
+
+```bash
+curl -X POST "http://localhost:8000/api/v1/meals/analyze-photo" \
+  -F "image=@/path/to/meal.jpg" \
+  -F "notes=Lunch portion, restaurant plate"
+```
+
+The legacy nutrition endpoint remains available during the migration.
 
 ```bash
 curl -X POST "http://localhost:8000/api/v1/nutrition/analyze" \
@@ -66,7 +76,7 @@ curl -X POST "http://localhost:8000/api/v1/nutrition/analyze" \
   -F "notes=Lunch portion, restaurant plate"
 ```
 
-The response includes calories, macros, likely ingredients, assumptions, confidence, and a persisted analysis ID.
+The legacy response includes calories, macros, likely ingredients, assumptions, confidence, and a persisted analysis ID.
 
 ## Environment
 
@@ -74,6 +84,7 @@ The response includes calories, macros, likely ingredients, assumptions, confide
 - `OPENAI_API_KEY`: API key for the AI provider
 - `OPENAI_MODEL`: model used for image analysis
 - `MAX_UPLOAD_MB`: maximum accepted upload size
+- `LOCAL_STORAGE_ROOT`: local directory for stored meal images, defaulting to `storage`
 
 ## API notes
 
