@@ -1,10 +1,14 @@
 import pytest
 
-from app.schemas.nutrition import MealAnalysisResponse, MealCorrectionRequest
+from app.schemas.nutrition import (
+    MealAnalysisResponse,
+    MealCorrectionRequest,
+    MealCorrectionResponse,
+)
 from app.services.meal_correction import MealCorrectionService, UnknownCorrectionTargetError
 
 
-def _analysis() -> MealAnalysisResponse:
+def _draft_analysis() -> MealAnalysisResponse:
     """Build a deterministic v1 draft analysis for correction service tests."""
 
     return MealAnalysisResponse.model_validate(
@@ -66,7 +70,7 @@ def _analysis() -> MealAnalysisResponse:
 def test_correction_service_accepts_analysis_and_request():
     """Verify the correction service accepts draft analysis data without endpoint wiring."""
 
-    analysis = _analysis()
+    analysis = _draft_analysis()
     correction = MealCorrectionRequest(
         item_id="item_1",
         correction_type="portion_scale",
@@ -76,6 +80,7 @@ def test_correction_service_accepts_analysis_and_request():
 
     result = MealCorrectionService().apply_correction(analysis=analysis, correction=correction)
 
+    assert isinstance(result, MealCorrectionResponse)
     assert result.analysis_id == analysis.analysis_id
     assert result.items == analysis.items
     assert result.meal_totals == analysis.meal_totals
@@ -90,4 +95,4 @@ def test_correction_service_rejects_unknown_item():
     )
 
     with pytest.raises(UnknownCorrectionTargetError, match="missing_item"):
-        MealCorrectionService().apply_correction(analysis=_analysis(), correction=correction)
+        MealCorrectionService().apply_correction(analysis=_draft_analysis(), correction=correction)
