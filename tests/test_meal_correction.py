@@ -5,7 +5,13 @@ from app.schemas.nutrition import (
     MealCorrectionRequest,
     MealCorrectionResponse,
 )
-from app.services.meal_correction import MealCorrectionService, UnknownCorrectionTargetError
+from app.services.meal_correction import (
+    MealCorrectionService,
+    UnknownCorrectionTargetError,
+    UnknownCorrectionTypeError,
+    UnknownCorrectionValueError,
+    UnknownSuggestionError,
+)
 
 
 def _draft_analysis() -> MealAnalysisResponse:
@@ -82,7 +88,7 @@ def test_correction_service_accepts_analysis_and_request():
 
     assert isinstance(result, MealCorrectionResponse)
     assert result.analysis_id == analysis.analysis_id
-    assert result.items == analysis.items
+    assert result.items[0].id == "item_1"
     assert result.meal_totals == analysis.meal_totals
     assert result.correction_history == []
 
@@ -95,4 +101,118 @@ def test_correction_service_rejects_unknown_item():
     )
 
     with pytest.raises(UnknownCorrectionTargetError, match="missing_item"):
+        MealCorrectionService().apply_correction(analysis=_draft_analysis(), correction=correction)
+
+
+def test_correction_service_applies_portion_scale_control():
+    """Verify portion controls scale the targeted item macro estimate."""
+
+    correction = MealCorrectionRequest(
+        item_id="item_1", correction_type="portion_scale", value="smaller"
+    )
+
+    result = MealCorrectionService().apply_correction(
+        analysis=_draft_analysis(), correction=correction
+    )
+
+    assert result.items[0].macro_estimate.calories == 586
+    assert result.items[0].macro_estimate.protein_g == pytest.approx(26.35)
+    assert result.items[0].macro_estimate.carbs_g == pytest.approx(62.9)
+    assert result.items[0].macro_estimate.fat_g == pytest.approx(19.55)
+    assert result.meal_totals.calories == 690
+
+
+def test_correction_service_applies_composition_ratio_control():
+    """Verify composition controls nudge macros for rice-versus-meat assumptions."""
+
+    correction = MealCorrectionRequest(
+        item_id="item_1", correction_type="composition_ratio", value="more_meat"
+    )
+
+    result = MealCorrectionService().apply_correction(
+        analysis=_draft_analysis(), correction=correction
+    )
+
+    assert result.items[0].macro_estimate.calories == 730
+    assert result.items[0].macro_estimate.protein_g == 37
+    assert result.items[0].macro_estimate.carbs_g == 66
+    assert result.items[0].macro_estimate.fat_g == 25
+
+
+def test_correction_service_applies_oil_level_control():
+    """Verify oil controls nudge fat and calories for cooking-fat assumptions."""
+
+    correction = MealCorrectionRequest(item_id="item_1", correction_type="oil_level", value="oily")
+
+    result = MealCorrectionService().apply_correction(
+        analysis=_draft_analysis(), correction=correction
+    )
+
+    assert result.items[0].macro_estimate.calories == 760
+    assert result.items[0].macro_estimate.protein_g == 31
+    assert result.items[0].macro_estimate.carbs_g == 74
+    assert result.items[0].macro_estimate.fat_g == 31
+
+
+def test_correction_service_applies_suggestion_preview_delta():
+    """Verify suggestion corrections reuse the AI-provided preview delta."""
+
+    correction = MealCorrectionRequest(
+        item_id="item_1",
+        correction_type="suggestion_delta",
+        value="apply",
+        suggestion_id="suggestion_1",
+    )
+
+    result = MealCorrectionService().apply_correction(
+        analysis=_draft_analysis(), correction=correction
+    )
+
+    assert result.items[0].macro_estimate.calories == 600
+    assert result.items[0].macro_estimate.protein_g == 27
+    assert result.items[0].macro_estimate.carbs_g == 64
+    assert result.items[0].macro_estimate.fat_g == 20
+
+
+@pytest.mark.parametrize(
+    "correction",
+    [
+        MealCorrectionRequest(item_id="item_1", correction_type="portion_scale", value="tiny"),
+        MealCorrectionRequest(
+            item_id="item_1", correction_type="composition_ratio", value="all_meat"
+        ),
+        MealCorrectionRequest(item_id="item_1", correction_type="oil_level", value="swimming"),
+    ],
+)
+def test_correction_service_rejects_unsupported_correction_values(
+    correction: MealCorrectionRequest,
+):
+    """Verify unsupported values fail with a correction value error."""
+
+    with pytest.raises(UnknownCorrectionValueError):
+        MealCorrectionService().apply_correction(analysis=_draft_analysis(), correction=correction)
+
+
+def test_correction_service_rejects_unsupported_correction_type():
+    """Verify unknown correction types fail with a correction type error."""
+
+    correction = MealCorrectionRequest(
+        item_id="item_1", correction_type="unknown", value="anything"
+    )
+
+    with pytest.raises(UnknownCorrectionTypeError):
+        MealCorrectionService().apply_correction(analysis=_draft_analysis(), correction=correction)
+
+
+def test_correction_service_rejects_missing_suggestion():
+    """Verify suggestion corrections fail when the suggestion ID is unknown."""
+
+    correction = MealCorrectionRequest(
+        item_id="item_1",
+        correction_type="suggestion_delta",
+        value="apply",
+        suggestion_id="missing_suggestion",
+    )
+
+    with pytest.raises(UnknownSuggestionError):
         MealCorrectionService().apply_correction(analysis=_draft_analysis(), correction=correction)
