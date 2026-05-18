@@ -1,6 +1,7 @@
 import pytest
 
 from app.schemas.nutrition import (
+    MacroEstimate,
     MealAnalysisResponse,
     MealCorrectionRequest,
     MealCorrectionResponse,
@@ -89,7 +90,7 @@ def test_correction_service_accepts_analysis_and_request():
     assert isinstance(result, MealCorrectionResponse)
     assert result.analysis_id == analysis.analysis_id
     assert result.items[0].id == "item_1"
-    assert result.meal_totals == analysis.meal_totals
+    assert result.meal_totals.calories == 586
     assert result.correction_history == []
 
 
@@ -119,7 +120,10 @@ def test_correction_service_applies_portion_scale_control():
     assert result.items[0].macro_estimate.protein_g == pytest.approx(26.35)
     assert result.items[0].macro_estimate.carbs_g == pytest.approx(62.9)
     assert result.items[0].macro_estimate.fat_g == pytest.approx(19.55)
-    assert result.meal_totals.calories == 690
+    assert result.meal_totals.calories == 586
+    assert result.meal_totals.protein_g == pytest.approx(26.35)
+    assert result.meal_totals.carbs_g == pytest.approx(62.9)
+    assert result.meal_totals.fat_g == pytest.approx(19.55)
 
 
 def test_correction_service_applies_composition_ratio_control():
@@ -172,6 +176,39 @@ def test_correction_service_applies_suggestion_preview_delta():
     assert result.items[0].macro_estimate.protein_g == 27
     assert result.items[0].macro_estimate.carbs_g == 64
     assert result.items[0].macro_estimate.fat_g == 20
+
+
+def test_correction_service_recalculates_totals_across_multiple_items():
+    """Verify meal totals are summed from every item after the correction is applied."""
+
+    analysis = _draft_analysis()
+    side_item = analysis.items[0].model_copy(
+        update={
+            "id": "item_2",
+            "macro_estimate": MacroEstimate(
+                calories=100, protein_g=10, carbs_g=12, fat_g=4
+            ),
+        }
+    )
+    analysis = analysis.model_copy(
+        update={
+            "items": [analysis.items[0], side_item],
+            "meal_totals": MacroEstimate(calories=790, protein_g=41, carbs_g=86, fat_g=27),
+        }
+    )
+    correction = MealCorrectionRequest(
+        item_id="item_1",
+        correction_type="suggestion_delta",
+        value="apply",
+        suggestion_id="suggestion_1",
+    )
+
+    result = MealCorrectionService().apply_correction(analysis=analysis, correction=correction)
+
+    assert result.meal_totals.calories == 700
+    assert result.meal_totals.protein_g == 37
+    assert result.meal_totals.carbs_g == 76
+    assert result.meal_totals.fat_g == 24
 
 
 @pytest.mark.parametrize(

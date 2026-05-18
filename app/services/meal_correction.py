@@ -1,5 +1,3 @@
-from typing import Any
-
 from app.schemas.nutrition import (
     MacroDelta,
     MacroEstimate,
@@ -62,9 +60,9 @@ class MealCorrectionService:
     ) -> MealCorrectionResponse:
         """Apply a supported MVP correction control to a draft analysis.
 
-        Step 2 updates the targeted item macro estimate for portion scale,
-        composition ratio, oil level, and suggestion-based corrections. Later
-        Stage 5 steps will recalculate meal totals and append correction history.
+        Step 3 updates the targeted item macro estimate and recalculates meal
+        totals from all item macro estimates. Later Stage 5 steps will append
+        correction history.
         """
 
         target_item = self._require_target_item(analysis=analysis, item_id=correction.item_id)
@@ -190,21 +188,32 @@ class MealCorrectionService:
     ) -> MealCorrectionResponse:
         """Build a correction response with the targeted item macro estimate updated."""
 
-        payload = analysis.model_dump(mode="json")
-        payload["items"] = [
-            self._item_payload_with_macro(item=item, corrected_macro=corrected_macro)
+        corrected_items = [
+            self._item_with_macro(item=item, corrected_macro=corrected_macro)
             if item.id == item_id
-            else item.model_dump(mode="json")
+            else item
             for item in analysis.items
         ]
+        payload = analysis.model_dump(mode="json")
+        payload["items"] = [item.model_dump(mode="json") for item in corrected_items]
+        payload["meal_totals"] = self._meal_totals_from_items(corrected_items).model_dump(
+            mode="json"
+        )
         payload["correction_history"] = []
         return MealCorrectionResponse.model_validate(payload)
 
-    def _item_payload_with_macro(
-        self, *, item: MealItem, corrected_macro: MacroEstimate
-    ) -> dict[str, Any]:
-        """Return an item payload with a replaced macro estimate."""
+    def _meal_totals_from_items(self, items: list[MealItem]) -> MacroEstimate:
+        """Recalculate meal totals from typed item macro estimates."""
 
-        payload = item.model_dump(mode="json")
-        payload["macro_estimate"] = corrected_macro.model_dump(mode="json")
-        return payload
+        macros = [item.macro_estimate for item in items]
+        return MacroEstimate(
+            calories=sum(macro.calories for macro in macros),
+            protein_g=sum(macro.protein_g for macro in macros),
+            carbs_g=sum(macro.carbs_g for macro in macros),
+            fat_g=sum(macro.fat_g for macro in macros),
+        )
+
+    def _item_with_macro(self, *, item: MealItem, corrected_macro: MacroEstimate) -> MealItem:
+        """Return an item model with a replaced macro estimate."""
+
+        return item.model_copy(update={"macro_estimate": corrected_macro})
