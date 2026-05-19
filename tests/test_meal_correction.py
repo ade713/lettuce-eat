@@ -1,3 +1,5 @@
+from datetime import UTC, datetime
+
 import pytest
 
 from app.schemas.nutrition import (
@@ -13,6 +15,18 @@ from app.services.meal_correction import (
     UnknownCorrectionValueError,
     UnknownSuggestionError,
 )
+
+
+def _clock() -> datetime:
+    """Return a stable timestamp for correction history assertions."""
+
+    return datetime(2026, 5, 19, 12, 30, tzinfo=UTC)
+
+
+def _service() -> MealCorrectionService:
+    """Build a correction service with a deterministic test clock."""
+
+    return MealCorrectionService(clock=_clock)
 
 
 def _draft_analysis() -> MealAnalysisResponse:
@@ -74,8 +88,8 @@ def _draft_analysis() -> MealAnalysisResponse:
     )
 
 
-def test_correction_service_accepts_analysis_and_request():
-    """Verify the correction service accepts draft analysis data without endpoint wiring."""
+def test_correction_service_returns_correction_response():
+    """Verify corrections return updated totals and a history event."""
 
     analysis = _draft_analysis()
     correction = MealCorrectionRequest(
@@ -85,13 +99,13 @@ def test_correction_service_accepts_analysis_and_request():
         suggestion_id="suggestion_1",
     )
 
-    result = MealCorrectionService().apply_correction(analysis=analysis, correction=correction)
+    result = _service().apply_correction(analysis=analysis, correction=correction)
 
     assert isinstance(result, MealCorrectionResponse)
     assert result.analysis_id == analysis.analysis_id
     assert result.items[0].id == "item_1"
     assert result.meal_totals.calories == 586
-    assert result.correction_history == []
+    assert len(result.correction_history) == 1
 
 
 def test_correction_service_rejects_unknown_item():
@@ -102,7 +116,7 @@ def test_correction_service_rejects_unknown_item():
     )
 
     with pytest.raises(UnknownCorrectionTargetError, match="missing_item"):
-        MealCorrectionService().apply_correction(analysis=_draft_analysis(), correction=correction)
+        _service().apply_correction(analysis=_draft_analysis(), correction=correction)
 
 
 def test_correction_service_applies_portion_scale_control():
@@ -112,7 +126,7 @@ def test_correction_service_applies_portion_scale_control():
         item_id="item_1", correction_type="portion_scale", value="smaller"
     )
 
-    result = MealCorrectionService().apply_correction(
+    result = _service().apply_correction(
         analysis=_draft_analysis(), correction=correction
     )
 
@@ -133,7 +147,7 @@ def test_correction_service_applies_composition_ratio_control():
         item_id="item_1", correction_type="composition_ratio", value="more_meat"
     )
 
-    result = MealCorrectionService().apply_correction(
+    result = _service().apply_correction(
         analysis=_draft_analysis(), correction=correction
     )
 
@@ -148,7 +162,7 @@ def test_correction_service_applies_oil_level_control():
 
     correction = MealCorrectionRequest(item_id="item_1", correction_type="oil_level", value="oily")
 
-    result = MealCorrectionService().apply_correction(
+    result = _service().apply_correction(
         analysis=_draft_analysis(), correction=correction
     )
 
@@ -168,7 +182,7 @@ def test_correction_service_applies_suggestion_preview_delta():
         suggestion_id="suggestion_1",
     )
 
-    result = MealCorrectionService().apply_correction(
+    result = _service().apply_correction(
         analysis=_draft_analysis(), correction=correction
     )
 
@@ -176,6 +190,61 @@ def test_correction_service_applies_suggestion_preview_delta():
     assert result.items[0].macro_estimate.protein_g == 27
     assert result.items[0].macro_estimate.carbs_g == 64
     assert result.items[0].macro_estimate.fat_g == 20
+
+
+def test_correction_service_appends_correction_history_event():
+    """Verify correction history records the request and resulting totals."""
+
+    correction = MealCorrectionRequest(
+        item_id="item_1",
+        correction_type="suggestion_delta",
+        value="apply",
+        suggestion_id="suggestion_1",
+    )
+
+    result = _service().apply_correction(analysis=_draft_analysis(), correction=correction)
+
+    event = result.correction_history[0]
+    assert event.item_id == "item_1"
+    assert event.correction_type == "suggestion_delta"
+    assert event.value == "apply"
+    assert event.suggestion_id == "suggestion_1"
+    assert event.resulting_meal_totals == result.meal_totals
+    assert event.applied_at == _clock()
+
+
+def test_correction_service_preserves_existing_correction_history():
+    """Verify later corrections append a new event with a new timestamp."""
+
+    correction_times = iter(
+        [
+            datetime(2026, 5, 19, 12, 30, tzinfo=UTC),
+            datetime(2026, 5, 19, 12, 31, tzinfo=UTC),
+        ]
+    )
+    service = MealCorrectionService(clock=lambda: next(correction_times))
+
+    first = service.apply_correction(
+        analysis=_draft_analysis(),
+        correction=MealCorrectionRequest(
+            item_id="item_1", correction_type="oil_level", value="oily"
+        ),
+    )
+
+    second = service.apply_correction(
+        analysis=first,
+        correction=MealCorrectionRequest(
+            item_id="item_1", correction_type="portion_scale", value="larger"
+        ),
+    )
+
+    assert len(second.correction_history) == 2
+    assert second.correction_history[0].correction_type == "oil_level"
+    assert second.correction_history[0].applied_at == datetime(2026, 5, 19, 12, 30, tzinfo=UTC)
+    assert second.correction_history[1].correction_type == "portion_scale"
+    assert second.correction_history[1].applied_at == datetime(2026, 5, 19, 12, 31, tzinfo=UTC)
+    assert second.correction_history[1].applied_at != second.correction_history[0].applied_at
+    assert second.correction_history[1].resulting_meal_totals == second.meal_totals
 
 
 def test_correction_service_recalculates_totals_across_multiple_items():
@@ -203,7 +272,7 @@ def test_correction_service_recalculates_totals_across_multiple_items():
         suggestion_id="suggestion_1",
     )
 
-    result = MealCorrectionService().apply_correction(analysis=analysis, correction=correction)
+    result = _service().apply_correction(analysis=analysis, correction=correction)
 
     assert result.meal_totals.calories == 700
     assert result.meal_totals.protein_g == 37
@@ -227,7 +296,7 @@ def test_correction_service_rejects_unsupported_correction_values(
     """Verify unsupported values fail with a correction value error."""
 
     with pytest.raises(UnknownCorrectionValueError):
-        MealCorrectionService().apply_correction(analysis=_draft_analysis(), correction=correction)
+        _service().apply_correction(analysis=_draft_analysis(), correction=correction)
 
 
 def test_correction_service_rejects_unsupported_correction_type():
@@ -238,7 +307,7 @@ def test_correction_service_rejects_unsupported_correction_type():
     )
 
     with pytest.raises(UnknownCorrectionTypeError):
-        MealCorrectionService().apply_correction(analysis=_draft_analysis(), correction=correction)
+        _service().apply_correction(analysis=_draft_analysis(), correction=correction)
 
 
 def test_correction_service_rejects_missing_suggestion():
@@ -252,4 +321,4 @@ def test_correction_service_rejects_missing_suggestion():
     )
 
     with pytest.raises(UnknownSuggestionError):
-        MealCorrectionService().apply_correction(analysis=_draft_analysis(), correction=correction)
+        _service().apply_correction(analysis=_draft_analysis(), correction=correction)

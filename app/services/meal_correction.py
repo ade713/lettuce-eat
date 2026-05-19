@@ -1,4 +1,8 @@
+from collections.abc import Callable
+from datetime import UTC, datetime
+
 from app.schemas.nutrition import (
+    CorrectionEvent,
     MacroDelta,
     MacroEstimate,
     MealAnalysisResponse,
@@ -55,14 +59,18 @@ class MealCorrectionService:
     developed and tested without FastAPI, database sessions, or AI provider calls.
     """
 
+    def __init__(self, *, clock: Callable[[], datetime] | None = None) -> None:
+        """Create the correction service with an injectable clock for history events."""
+
+        self._clock = clock or (lambda: datetime.now(UTC))
+
     def apply_correction(
         self, *, analysis: MealAnalysisResponse, correction: MealCorrectionRequest
     ) -> MealCorrectionResponse:
         """Apply a supported MVP correction control to a draft analysis.
 
-        Step 3 updates the targeted item macro estimate and recalculates meal
-        totals from all item macro estimates. Later Stage 5 steps will append
-        correction history.
+        Step 4 updates the targeted item macro estimate, recalculates meal
+        totals, and appends a correction event for future draft persistence.
         """
 
         target_item = self._require_target_item(analysis=analysis, item_id=correction.item_id)
@@ -70,7 +78,10 @@ class MealCorrectionService:
             analysis=analysis, correction=correction, current_macro=target_item.macro_estimate
         )
         return self._response_with_corrected_item(
-            analysis=analysis, item_id=target_item.id, corrected_macro=corrected_macro
+            analysis=analysis,
+            correction=correction,
+            item_id=target_item.id,
+            corrected_macro=corrected_macro,
         )
 
     def _require_target_item(self, *, analysis: MealAnalysisResponse, item_id: str) -> MealItem:
@@ -184,9 +195,14 @@ class MealCorrectionService:
         )
 
     def _response_with_corrected_item(
-        self, *, analysis: MealAnalysisResponse, item_id: str, corrected_macro: MacroEstimate
+        self,
+        *,
+        analysis: MealAnalysisResponse,
+        correction: MealCorrectionRequest,
+        item_id: str,
+        corrected_macro: MacroEstimate,
     ) -> MealCorrectionResponse:
-        """Build a correction response with the targeted item macro estimate updated."""
+        """Build a correction response with updated macros and correction history."""
 
         corrected_items = [
             self._item_with_macro(item=item, corrected_macro=corrected_macro)
@@ -196,11 +212,38 @@ class MealCorrectionService:
         ]
         payload = analysis.model_dump(mode="json")
         payload["items"] = [item.model_dump(mode="json") for item in corrected_items]
-        payload["meal_totals"] = self._meal_totals_from_items(corrected_items).model_dump(
-            mode="json"
+        meal_totals = self._meal_totals_from_items(corrected_items)
+        correction_history = self._existing_history(analysis)
+        correction_history.append(
+            self._correction_event(correction=correction, resulting_meal_totals=meal_totals)
         )
-        payload["correction_history"] = []
+
+        payload["meal_totals"] = meal_totals.model_dump(mode="json")
+        payload["correction_history"] = [
+            event.model_dump(mode="json") for event in correction_history
+        ]
         return MealCorrectionResponse.model_validate(payload)
+
+    def _existing_history(self, analysis: MealAnalysisResponse) -> list[CorrectionEvent]:
+        """Return existing correction history when a correction response is corrected again."""
+
+        if isinstance(analysis, MealCorrectionResponse):
+            return list(analysis.correction_history)
+        return []
+
+    def _correction_event(
+        self, *, correction: MealCorrectionRequest, resulting_meal_totals: MacroEstimate
+    ) -> CorrectionEvent:
+        """Record the correction request and meal totals produced by applying it."""
+
+        return CorrectionEvent(
+            item_id=correction.item_id,
+            correction_type=correction.correction_type,
+            value=correction.value,
+            suggestion_id=correction.suggestion_id,
+            resulting_meal_totals=resulting_meal_totals,
+            applied_at=self._clock(),
+        )
 
     def _meal_totals_from_items(self, items: list[MealItem]) -> MacroEstimate:
         """Recalculate meal totals from typed item macro estimates."""
