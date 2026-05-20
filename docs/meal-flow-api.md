@@ -177,6 +177,8 @@ sequenceDiagram
 - `suggestions[].target_id` must refer to an item ID when `target_type` is `item`.
 - `meal_totals` must aggregate across all items.
 - `preview_delta` shows the expected macro change before a correction is applied.
+- Corrections should be deterministic backend updates that do not call AI again.
+- Once correction endpoints exist, real-image manual testing should confirm corrections feel instant before the meal is logged.
 - Corrections and logged meal responses should preserve the same macro field names.
 
 ## Dataset Record
