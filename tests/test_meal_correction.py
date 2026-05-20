@@ -1,4 +1,6 @@
+import ast
 from datetime import UTC, datetime
+from pathlib import Path
 
 import pytest
 
@@ -14,6 +16,15 @@ from app.services.meal_correction import (
     UnknownCorrectionTypeError,
     UnknownCorrectionValueError,
     UnknownSuggestionError,
+)
+
+_FORBIDDEN_CORRECTION_SERVICE_IMPORT_PREFIXES = (
+    "fastapi",
+    "sqlalchemy",
+    "app.api",
+    "app.db",
+    "app.models",
+    "app.services.nutrition_ai",
 )
 
 
@@ -86,6 +97,30 @@ def _draft_analysis() -> MealAnalysisResponse:
             ],
         }
     )
+
+
+def test_correction_service_has_no_endpoint_database_or_ai_dependencies():
+    """Verify correction logic stays independent from routes, persistence, and AI calls."""
+
+    source = Path("app/services/meal_correction.py").read_text()
+    tree = ast.parse(source)
+    imported_modules = {
+        alias.name
+        for node in ast.walk(tree)
+        if isinstance(node, ast.Import)
+        for alias in node.names
+    }
+    imported_modules.update(
+        node.module
+        for node in ast.walk(tree)
+        if isinstance(node, ast.ImportFrom) and node.module is not None
+    )
+
+    assert not {
+        module
+        for module in imported_modules
+        if module.startswith(_FORBIDDEN_CORRECTION_SERVICE_IMPORT_PREFIXES)
+    }
 
 
 def test_correction_service_returns_correction_response():

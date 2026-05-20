@@ -57,6 +57,8 @@ class MealCorrectionService:
 
     Stage 5 keeps this as a pure-Python boundary so correction behavior can be
     developed and tested without FastAPI, database sessions, or AI provider calls.
+    Route handlers should pass validated schemas into this service rather than
+    moving endpoint, persistence, or AI concerns into this module.
     """
 
     def __init__(self, *, clock: Callable[[], datetime] | None = None) -> None:
